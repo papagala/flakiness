@@ -23,6 +23,30 @@ flakyDeployment:
   servicePort: 80
   # percentageOfFailures: 20   # optional per-component override
 
+  # Expose the flaky Service through Envoy Gateway (Gateway API) to test
+  # gateway-level retries via a BackendTrafficPolicy. Requires Envoy Gateway
+  # installed in the cluster. The Gateway + HTTPRoute are created when
+  # gateway.enabled=true; the BackendTrafficPolicy is added when retry.enabled=true
+  # (toggle it to compare baseline vs retry).
+  gateway:
+    enabled: false
+    gatewayClassName: eg           # Envoy Gateway GatewayClass name
+    createGatewayClass: true       # also create the GatewayClass (cluster-scoped)
+    listenerPort: 80
+    hostname: ""                   # empty = match any Host header
+    retry:
+      enabled: true
+      numRetries: 5
+      statusCodes:
+        - 503
+      triggers:
+        - connect-failure
+        - retriable-status-codes
+      perRetryTimeout: 250ms
+      backOff:
+        baseInterval: 100ms
+        maxInterval: 10s
+
 # ---------------------------------------------------------------------------
 # 2) KServe InferenceService (serving.kserve.io/v1beta1) with a custom predictor.
 # ---------------------------------------------------------------------------
