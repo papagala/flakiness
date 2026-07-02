@@ -23,6 +23,11 @@ spec:
     - name: http
       protocol: HTTP
       port: {{ $gw.listenerPort }}
+      {{- with $gw.hostname }}
+      # Scope the listener to this hostname so multiple flakiness instances can
+      # coexist on a shared/merged Envoy Gateway without listener conflicts.
+      hostname: {{ . | quote }}
+      {{- end }}
       allowedRoutes:
         namespaces:
           from: Same
