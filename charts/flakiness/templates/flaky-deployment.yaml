@@ -32,6 +32,10 @@ spec:
             - "{{ .Values.containerPort }}"
             - "--model-name"
             - "{{ .Values.flakyDeployment.name }}"
+            {{- with .Values.flakyDeployment.failStatus }}
+            - "--fail-status"
+            - "{{ . }}"
+            {{- end }}
           ports:
             - containerPort: {{ .Values.containerPort }}
           readinessProbe:

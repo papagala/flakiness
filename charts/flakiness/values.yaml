@@ -22,6 +22,9 @@ flakyDeployment:
   replicas: 1
   servicePort: 80
   # percentageOfFailures: 20   # optional per-component override
+  # HTTP status returned on failure (server default is 503 if unset). Set to a
+  # code your gateway retry policy actually retries, e.g. 502.
+  failStatus: ""
   # Extra pod annotations. E.g. to bypass an Istio mesh so a Gateway can reach
   # the pod directly in a namespace with default-deny AuthorizationPolicies:
   #   podAnnotations: { sidecar.istio.io/inject: "false" }
