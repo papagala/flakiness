@@ -1,0 +1,6 @@
+*.pyc
+__pycache__/
+*.tgz
+charts/**/charts/
+.DS_Store
+.claude/

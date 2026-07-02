@@ -1,0 +1,12 @@
+# Minimal override: just the image and which components to install.
+# Usage: helm install flakiness charts/flakiness -f charts/flakiness/values-minimal.yaml
+image:
+  repository: oswaldodocker/flakiness
+  tag: v0.0.1
+
+flakyDeployment:
+  enabled: true
+flakyInferenceService:
+  enabled: false
+flakyInferenceGraph:
+  enabled: false

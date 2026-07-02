@@ -1,0 +1,15 @@
+apiVersion: v2
+name: flakiness
+description: Deploy a configurable flaky inference server as a plain Deployment, a KServe InferenceService, or a KServe InferenceGraph (with retry) — toggle any subset to test gateway/mesh retry behaviour.
+type: application
+version: 0.1.0
+appVersion: "v0.0.1"
+keywords:
+  - kserve
+  - inferencegraph
+  - retry
+  - envoy
+  - testing
+home: https://github.com/papagala/flakiness
+sources:
+  - https://github.com/papagala/flakiness

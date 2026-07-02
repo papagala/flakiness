@@ -1,0 +1,19 @@
+flakiness installed in namespace: {{ .Release.Namespace }}
+
+Enabled components:
+{{- if .Values.flakyDeployment.enabled }}
+  - Deployment       : {{ .Values.flakyDeployment.name }} (Service :{{ .Values.flakyDeployment.servicePort }})
+{{- end }}
+{{- if .Values.flakyInferenceService.enabled }}
+  - InferenceService : {{ .Values.flakyInferenceService.name }}
+{{- end }}
+{{- if .Values.flakyInferenceGraph.enabled }}
+  - InferenceGraph   : {{ .Values.flakyInferenceGraph.name }} (backends: {{ .Values.flakyInferenceGraph.flakyBackend.name }}{{ if .Values.flakyInferenceGraph.stableBackend.enabled }}, {{ .Values.flakyInferenceGraph.stableBackend.name }}{{ end }})
+{{- end }}
+
+Global default failure percentage: {{ .Values.percentageOfFailures }}%
+Image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+
+Quick test (plain Deployment):
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ .Values.flakyDeployment.name }} 8080:{{ .Values.flakyDeployment.servicePort }}
+  curl -s -o /dev/null -w "%{http_code}\n" -X POST localhost:8080 -d '{}'

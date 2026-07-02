@@ -1,0 +1,32 @@
+{{- if .Values.flakyInferenceService.enabled }}
+{{- $pct := include "flakiness.percentage" (dict "component" .Values.flakyInferenceService "root" .) }}
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: {{ .Values.flakyInferenceService.name }}
+  labels:
+    {{- include "flakiness.labels" . | nindent 4 }}
+spec:
+  predictor:
+    minReplicas: {{ .Values.flakyInferenceService.minReplicas }}
+    containers:
+      - name: kserve-container
+        image: {{ include "flakiness.image" . }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        args:
+          - "--percentage-of-failures"
+          - "{{ $pct }}"
+          - "--port"
+          - "{{ .Values.containerPort }}"
+          - "--model-name"
+          - "{{ .Values.flakyInferenceService.name }}"
+        ports:
+          - containerPort: {{ .Values.containerPort }}
+            protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: {{ .Values.containerPort }}
+          initialDelaySeconds: 2
+          periodSeconds: 5
+{{- end }}

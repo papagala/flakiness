@@ -1,0 +1,132 @@
+{{- if .Values.flakyInferenceGraph.enabled }}
+{{- $ig := .Values.flakyInferenceGraph }}
+{{- $flakyPct := $ig.flakyBackend.percentageOfFailures }}
+# --- Flaky backend (Deployment + Service) used as a graph step ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $ig.flakyBackend.name }}
+  labels:
+    app: {{ $ig.flakyBackend.name }}
+    {{- include "flakiness.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ $ig.flakyBackend.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $ig.flakyBackend.name }}
+    spec:
+      containers:
+        - name: flaky
+          image: {{ include "flakiness.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--percentage-of-failures"
+            - "{{ $flakyPct }}"
+            - "--port"
+            - "{{ .Values.containerPort }}"
+            - "--model-name"
+            - "{{ $ig.flakyBackend.name }}"
+          ports:
+            - containerPort: {{ .Values.containerPort }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: {{ .Values.containerPort }}
+            initialDelaySeconds: 2
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $ig.flakyBackend.name }}
+  labels:
+    app: {{ $ig.flakyBackend.name }}
+    {{- include "flakiness.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: {{ $ig.flakyBackend.name }}
+  ports:
+    - port: 80
+      targetPort: {{ .Values.containerPort }}
+{{- if $ig.stableBackend.enabled }}
+---
+# --- Stable backend (never fails) ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $ig.stableBackend.name }}
+  labels:
+    app: {{ $ig.stableBackend.name }}
+    {{- include "flakiness.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ $ig.stableBackend.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $ig.stableBackend.name }}
+    spec:
+      containers:
+        - name: stable
+          image: {{ include "flakiness.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--percentage-of-failures"
+            - "0"
+            - "--port"
+            - "{{ .Values.containerPort }}"
+            - "--model-name"
+            - "{{ $ig.stableBackend.name }}"
+          ports:
+            - containerPort: {{ .Values.containerPort }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: {{ .Values.containerPort }}
+            initialDelaySeconds: 2
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $ig.stableBackend.name }}
+  labels:
+    app: {{ $ig.stableBackend.name }}
+    {{- include "flakiness.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: {{ $ig.stableBackend.name }}
+  ports:
+    - port: 80
+      targetPort: {{ .Values.containerPort }}
+{{- end }}
+---
+# --- The InferenceGraph with retry on the flaky step ---
+apiVersion: serving.kserve.io/v1alpha1
+kind: InferenceGraph
+metadata:
+  name: {{ $ig.name }}
+  labels:
+    {{- include "flakiness.labels" . | nindent 4 }}
+spec:
+  nodes:
+    root:
+      routerType: {{ $ig.routerType }}
+      steps:
+        - name: flaky
+          serviceUrl: http://{{ $ig.flakyBackend.name }}.{{ .Release.Namespace }}.svc.cluster.local
+          retry:
+            maxRetries: {{ $ig.retry.maxRetries }}
+            initialDelayMs: {{ $ig.retry.initialDelayMs }}
+            maxDelayMs: {{ $ig.retry.maxDelayMs }}
+        {{- if $ig.stableBackend.enabled }}
+        - name: stable
+          serviceUrl: http://{{ $ig.stableBackend.name }}.{{ .Release.Namespace }}.svc.cluster.local
+        {{- end }}
+{{- end }}

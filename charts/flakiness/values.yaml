@@ -1,0 +1,55 @@
+# Default values for the flakiness chart.
+# Override the minimum you need (image + enable/disable flags) — see values-minimal.yaml.
+
+image:
+  repository: oswaldodocker/flakiness
+  tag: v0.0.1
+  pullPolicy: IfNotPresent
+
+# Global default failure percentage applied to every component unless the
+# component sets its own `percentageOfFailures`.
+percentageOfFailures: 20
+
+# The port the flaky server listens on inside the container.
+containerPort: 8080
+
+# ---------------------------------------------------------------------------
+# 1) Plain Kubernetes Deployment + Service (no KServe required).
+# ---------------------------------------------------------------------------
+flakyDeployment:
+  enabled: true
+  name: flaky-deployment
+  replicas: 1
+  servicePort: 80
+  # percentageOfFailures: 20   # optional per-component override
+
+# ---------------------------------------------------------------------------
+# 2) KServe InferenceService (serving.kserve.io/v1beta1) with a custom predictor.
+# ---------------------------------------------------------------------------
+flakyInferenceService:
+  enabled: false
+  name: flaky-isvc
+  minReplicas: 1
+  # percentageOfFailures: 20   # optional per-component override
+
+# ---------------------------------------------------------------------------
+# 3) KServe InferenceGraph (serving.kserve.io/v1alpha1) with retry on a flaky
+#    step. Backing flaky + stable Deployments/Services are created too.
+# ---------------------------------------------------------------------------
+flakyInferenceGraph:
+  enabled: false
+  name: flaky-graph
+  # Router type for the root node: Sequence or Ensemble.
+  routerType: Sequence
+  flakyBackend:
+    name: flaky-backend
+    percentageOfFailures: 50
+  stableBackend:
+    enabled: true
+    name: stable-backend
+  # Retry config applied to the flaky step (schema from the kserve
+  # feat/inferencegraph-retry-e2e-tests branch).
+  retry:
+    maxRetries: 5
+    initialDelayMs: 200
+    maxDelayMs: 2000
