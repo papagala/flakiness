@@ -22,6 +22,10 @@ flakyDeployment:
   replicas: 1
   servicePort: 80
   # percentageOfFailures: 20   # optional per-component override
+  # Extra pod annotations. E.g. to bypass an Istio mesh so a Gateway can reach
+  # the pod directly in a namespace with default-deny AuthorizationPolicies:
+  #   podAnnotations: { sidecar.istio.io/inject: "false" }
+  podAnnotations: {}
 
   # Expose the flaky Service through Envoy Gateway (Gateway API) to test
   # gateway-level retries via a BackendTrafficPolicy. Requires Envoy Gateway

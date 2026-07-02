@@ -16,6 +16,10 @@ spec:
     metadata:
       labels:
         app: {{ .Values.flakyDeployment.name }}
+      {{- with .Values.flakyDeployment.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
       containers:
         - name: flaky
