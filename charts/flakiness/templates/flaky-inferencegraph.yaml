@@ -121,6 +121,10 @@ spec:
       steps:
         - name: flaky
           serviceUrl: http://{{ $ig.flakyBackend.name }}.{{ .Release.Namespace }}.svc.cluster.local
+          # Hard so a failed flaky step (after retries are exhausted) surfaces to
+          # the caller. With the default Soft dependency the Sequence router
+          # continues to the next step and returns *its* status, masking retries.
+          dependency: {{ $ig.flakyBackend.dependency }}
           retry:
             maxRetries: {{ $ig.retry.maxRetries }}
             initialDelayMs: {{ $ig.retry.initialDelayMs }}

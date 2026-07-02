@@ -44,6 +44,11 @@ flakyInferenceGraph:
   flakyBackend:
     name: flaky-backend
     percentageOfFailures: 50
+    # Soft (default KServe) lets the Sequence router continue past a failed step
+    # and return the next step's status, which hides retry effects. Hard makes a
+    # failed flaky step (after retries) surface to the caller so retries are
+    # actually observable end-to-end.
+    dependency: Hard
   stableBackend:
     enabled: true
     name: stable-backend
